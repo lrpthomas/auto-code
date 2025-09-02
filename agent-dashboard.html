@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent-Based Development Dashboard</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/chart.js@4.0.1/dist/chart.umd.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .agent-card { transition: all 0.3s ease; }
+        .agent-card:hover { transform: translateY(-2px); }
+        .status-idle { @apply bg-gray-100 text-gray-800; }
+        .status-working { @apply bg-yellow-100 text-yellow-800; }
+        .status-ready { @apply bg-green-100 text-green-800; }
+        .status-error { @apply bg-red-100 text-red-800; }
+        .performance-excellent { @apply text-green-600; }
+        .performance-good { @apply text-blue-600; }
+        .performance-average { @apply text-yellow-600; }
+        .performance-poor { @apply text-red-600; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">🤖 Agent Command Center</h1>
+                        <div class="ml-4 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                            {{ agents.length }} Active Agents
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-sm text-gray-600">
+                            System Health: <span class="font-semibold text-green-600">{{ systemHealth }}%</span>
+                        </div>
+                        <button @click="refreshData" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Active Projects</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ activeProjects }}</p>
+                        </div>
+                        <div class="text-3xl">📋</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Tasks in Queue</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ queuedTasks }}</p>
+                        </div>
+                        <div class="text-3xl">⏳</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Completed Today</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ completedToday }}</p>
+                        </div>
+                        <div class="text-3xl">✅</div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Success Rate</p>
+                            <p class="text-2xl font-bold text-green-600">{{ overallSuccessRate }}%</p>
+                        </div>
+                        <div class="text-3xl">📈</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div v-for="agent in agents" :key="agent.id" 
+                     class="agent-card bg-white rounded-lg shadow hover:shadow-lg p-6">
+                    
+                    <!-- Agent Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="text-2xl mr-3">{{ getAgentEmoji(agent.role) }}</div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">{{ agent.name }}</h3>
+                                <p class="text-sm text-gray-600">{{ formatRole(agent.role) }}</p>
+                            </div>
+                        </div>
+                        <span :class="'px-2 py-1 rounded-full text-xs font-medium status-' + agent.status">
+                            {{ agent.status.toUpperCase() }}
+                        </span>
+                    </div>
+
+                    <!-- Agent Stats -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-gray-900">{{ agent.currentTasks }}</p>
+                            <p class="text-xs text-gray-600">Active Tasks</p>
+                        </div>
+                        <div class="text-center">
+                            <p :class="'text-2xl font-bold performance-' + getPerformanceLevel(agent.performance)">
+                                {{ agent.performance }}
+                            </p>
+                            <p class="text-xs text-gray-600">Performance</p>
+                        </div>
+                    </div>
+
+                    <!-- Current Task -->
+                    <div v-if="agent.currentTask" class="mb-4">
+                        <p class="text-sm font-medium text-gray-700 mb-1">Current Task:</p>
+                        <p class="text-sm text-gray-600 bg-gray-50 rounded p-2">{{ agent.currentTask }}</p>
+                    </div>
+
+                    <!-- Agent Actions -->
+                    <div class="flex space-x-2">
+                        <button @click="viewAgentDetails(agent)" 
+                                class="flex-1 px-3 py-2 bg-blue-100 text-blue-700 rounded-md text-sm hover:bg-blue-200">
+                            Details
+                        </button>
+                        <button @click="assignTask(agent)" 
+                                :disabled="agent.status === 'working'"
+                                class="flex-1 px-3 py-2 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200 disabled:opacity-50">
+                            Assign Task
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Conversations -->
+            <div class="bg-white rounded-lg shadow mb-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">💬 Agent Conversations</h2>
+                </div>
+                <div class="p-6">
+                    <div v-if="conversations.length === 0" class="text-center text-gray-500">
+                        No active conversations
+                    </div>
+                    <div v-else class="space-y-4">
+                        <div v-for="conv in conversations" :key="conv.id" 
+                             class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="text-sm font-medium">
+                                    {{ getAgentName(conv.participants[0]) }} 
+                                    ↔️ 
+                                    {{ getAgentName(conv.participants[1]) }}
+                                </div>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                    {{ conv.messageCount }} messages
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {{ formatTimestamp(conv.lastMessage) }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                
+                <!-- Agent Performance Chart -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">📊 Agent Performance</h2>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="performanceChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <!-- Task Distribution Chart -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900">🎯 Task Distribution</h2>
+                    </div>
+                    <div class="p-6">
+                        <canvas id="taskChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Log -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">📋 Activity Log</h2>
+                    <button @click="clearLog" class="text-sm text-red-600 hover:text-red-800">
+                        Clear Log
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        <div v-for="activity in activityLog" :key="activity.id" 
+                             class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                            <div class="text-sm">{{ activity.emoji }}</div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900">{{ activity.message }}</p>
+                                <p class="text-xs text-gray-600">{{ formatTimestamp(activity.timestamp) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Agent Details Modal -->
+        <div v-if="selectedAgent" @click="selectedAgent = null" 
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div @click.stop class="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        {{ getAgentEmoji(selectedAgent.role) }} {{ selectedAgent.name }}
+                    </h2>
+                    <button @click="selectedAgent = null" class="text-gray-400 hover:text-gray-600">
+                        ✕
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">Capabilities</h3>
+                            <ul class="space-y-1">
+                                <li v-for="capability in selectedAgent.capabilities" :key="capability"
+                                    class="text-sm text-gray-600 flex items-center">
+                                    <span class="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                    {{ capability }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">Statistics</h3>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Tasks Completed:</span>
+                                    <span class="font-medium">{{ selectedAgent.completedTasks || 0 }}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Success Rate:</span>
+                                    <span class="font-medium">{{ selectedAgent.successRate || 100 }}%</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Avg. Response Time:</span>
+                                    <span class="font-medium">{{ selectedAgent.avgResponseTime || '2.3s' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-900 mb-2">Recent Tasks</h3>
+                        <div class="space-y-2">
+                            <div v-for="task in selectedAgent.recentTasks || []" :key="task.id"
+                                 class="flex items-center justify-between p-3 bg-gray-50 rounded">
+                                <span class="text-sm text-gray-900">{{ task.name }}</span>
+                                <span :class="'text-xs px-2 py-1 rounded-full ' + 
+                                    (task.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800')">
+                                    {{ task.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    agents: [
+                        {
+                            id: 'pm001',
+                            name: 'Project Manager',
+                            role: 'project-manager',
+                            status: 'ready',
+                            currentTasks: 2,
+                            performance: 95,
+                            currentTask: 'Coordinating frontend-backend integration',
+                            capabilities: ['planning', 'coordination', 'task-delegation'],
+                            completedTasks: 47,
+                            successRate: 98
+                        },
+                        {
+                            id: 'arch001',
+                            name: 'System Architect',
+                            role: 'architect',
+                            status: 'working',
+                            currentTasks: 1,
+                            performance: 92,
+                            currentTask: 'Designing microservices architecture',
+                            capabilities: ['system-design', 'database-design', 'api-design'],
+                            completedTasks: 23,
+                            successRate: 96
+                        },
+                        {
+                            id: 'fe001',
+                            name: 'Frontend Developer',
+                            role: 'frontend-developer',
+                            status: 'ready',
+                            currentTasks: 0,
+                            performance: 88,
+                            currentTask: null,
+                            capabilities: ['ui-development', 'responsive-design', 'component-design'],
+                            completedTasks: 34,
+                            successRate: 94
+                        },
+                        {
+                            id: 'be001',
+                            name: 'Backend Developer',
+                            role: 'backend-developer',
+                            status: 'working',
+                            currentTasks: 3,
+                            performance: 90,
+                            currentTask: 'Implementing authentication service',
+                            capabilities: ['api-development', 'database-integration', 'authentication'],
+                            completedTasks: 41,
+                            successRate: 97
+                        },
+                        {
+                            id: 'qa001',
+                            name: 'QA Engineer',
+                            role: 'qa-engineer',
+                            status: 'ready',
+                            currentTasks: 1,
+                            performance: 94,
+                            currentTask: 'Writing integration tests',
+                            capabilities: ['unit-testing', 'integration-testing', 'e2e-testing'],
+                            completedTasks: 28,
+                            successRate: 99
+                        },
+                        {
+                            id: 'devops001',
+                            name: 'DevOps Engineer',
+                            role: 'devops-engineer',
+                            status: 'idle',
+                            currentTasks: 0,
+                            performance: 87,
+                            currentTask: null,
+                            capabilities: ['deployment', 'ci-cd', 'containerization'],
+                            completedTasks: 19,
+                            successRate: 92
+                        }
+                    ],
+                    activeProjects: 3,
+                    queuedTasks: 7,
+                    completedToday: 12,
+                    overallSuccessRate: 96,
+                    systemHealth: 98,
+                    conversations: [
+                        {
+                            id: 'conv001',
+                            participants: ['pm001', 'arch001'],
+                            messageCount: 8,
+                            lastMessage: new Date(Date.now() - 300000)
+                        },
+                        {
+                            id: 'conv002',
+                            participants: ['fe001', 'be001'],
+                            messageCount: 5,
+                            lastMessage: new Date(Date.now() - 120000)
+                        }
+                    ],
+                    activityLog: [
+                        {
+                            id: 'act001',
+                            emoji: '✅',
+                            message: 'Backend Developer completed API endpoint creation',
+                            timestamp: new Date(Date.now() - 180000)
+                        },
+                        {
+                            id: 'act002',
+                            emoji: '🤝',
+                            message: 'Frontend and Backend agents started collaboration on user auth',
+                            timestamp: new Date(Date.now() - 300000)
+                        },
+                        {
+                            id: 'act003',
+                            emoji: '📋',
+                            message: 'Project Manager assigned new task to QA Engineer',
+                            timestamp: new Date(Date.now() - 420000)
+                        }
+                    ],
+                    selectedAgent: null,
+                    performanceChart: null,
+                    taskChart: null
+                }
+            },
+            
+            mounted() {
+                this.initCharts();
+                this.startRealTimeUpdates();
+            },
+            
+            methods: {
+                getAgentEmoji(role) {
+                    const emojis = {
+                        'project-manager': '👨‍💼',
+                        'architect': '🏗️',
+                        'frontend-developer': '🎨',
+                        'backend-developer': '⚙️',
+                        'database-specialist': '🗄️',
+                        'qa-engineer': '🧪',
+                        'devops-engineer': '🚀',
+                        'technical-writer': '📝',
+                        'security-specialist': '🔒'
+                    };
+                    return emojis[role] || '🤖';
+                },
+                
+                formatRole(role) {
+                    return role.split('-').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                },
+                
+                getPerformanceLevel(score) {
+                    if (score >= 90) return 'excellent';
+                    if (score >= 75) return 'good';
+                    if (score >= 60) return 'average';
+                    return 'poor';
+                },
+                
+                formatTimestamp(timestamp) {
+                    const now = new Date();
+                    const diff = now - timestamp;
+                    const minutes = Math.floor(diff / 60000);
+                    if (minutes < 1) return 'Just now';
+                    if (minutes < 60) return `${minutes}m ago`;
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) return `${hours}h ago`;
+                    return timestamp.toLocaleDateString();
+                },
+                
+                viewAgentDetails(agent) {
+                    this.selectedAgent = agent;
+                },
+                
+                assignTask(agent) {
+                    const taskName = prompt('Enter task description:');
+                    if (taskName) {
+                        agent.currentTask = taskName;
+                        agent.status = 'working';
+                        agent.currentTasks += 1;
+                        this.addActivity('📋', `Task assigned to ${agent.name}: ${taskName}`);
+                    }
+                },
+                
+                getAgentName(agentId) {
+                    const agent = this.agents.find(a => a.id === agentId);
+                    return agent ? agent.name : agentId;
+                },
+                
+                addActivity(emoji, message) {
+                    this.activityLog.unshift({
+                        id: 'act' + Date.now(),
+                        emoji: emoji,
+                        message: message,
+                        timestamp: new Date()
+                    });
+                    
+                    // Keep only last 20 activities
+                    if (this.activityLog.length > 20) {
+                        this.activityLog = this.activityLog.slice(0, 20);
+                    }
+                },
+                
+                clearLog() {
+                    this.activityLog = [];
+                },
+                
+                refreshData() {
+                    // Simulate data refresh
+                    this.agents.forEach(agent => {
+                        if (Math.random() > 0.7) {
+                            agent.performance = Math.min(100, agent.performance + Math.floor(Math.random() * 3));
+                        }
+                    });
+                    this.addActivity('🔄', 'Dashboard data refreshed');
+                },
+                
+                initCharts() {
+                    // Performance Chart
+                    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+                    this.performanceChart = new Chart(perfCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: this.agents.map(a => a.name),
+                            datasets: [{
+                                label: 'Performance Score',
+                                data: this.agents.map(a => a.performance),
+                                backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                                borderColor: 'rgba(59, 130, 246, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100
+                                }
+                            }
+                        }
+                    });
+
+                    // Task Distribution Chart
+                    const taskCtx = document.getElementById('taskChart').getContext('2d');
+                    this.taskChart = new Chart(taskCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: this.agents.map(a => a.name),
+                            datasets: [{
+                                data: this.agents.map(a => a.currentTasks + 1),
+                                backgroundColor: [
+                                    '#3B82F6', '#10B981', '#F59E0B', 
+                                    '#EF4444', '#8B5CF6', '#06B6D4'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                startRealTimeUpdates() {
+                    setInterval(() => {
+                        // Simulate real-time updates
+                        if (Math.random() > 0.8) {
+                            const randomAgent = this.agents[Math.floor(Math.random() * this.agents.length)];
+                            const activities = [
+                                { emoji: '✅', message: `${randomAgent.name} completed a task` },
+                                { emoji: '🔄', message: `${randomAgent.name} started new task` },
+                                { emoji: '📊', message: `${randomAgent.name} performance updated` }
+                            ];
+                            const activity = activities[Math.floor(Math.random() * activities.length)];
+                            this.addActivity(activity.emoji, activity.message);
+                        }
+                    }, 10000);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

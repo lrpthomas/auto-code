@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORCHESTRATOR-ALPHA Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse-green {
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-idle { background-color: #6b7280; }
+        .status-busy { background-color: #f59e0b; }
+        .status-error { background-color: #ef4444; }
+        .status-offline { background-color: #374151; }
+        .task-pending { background-color: #e5e7eb; }
+        .task-in-progress { background-color: #3b82f6; }
+        .task-completed { background-color: #10b981; }
+        .task-failed { background-color: #ef4444; }
+        .alert-info { border-left-color: #3b82f6; }
+        .alert-warning { border-left-color: #f59e0b; }
+        .alert-error { border-left-color: #ef4444; }
+        .alert-critical { border-left-color: #dc2626; }
+        .progress-bar {
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            transition: width 0.3s ease;
+        }
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">ORCHESTRATOR-ALPHA</h1>
+                    <span class="ml-3 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full pulse-green">LIVE</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-500">
+                        <span id="current-time"></span>
+                    </div>
+                    <button id="export-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- System Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Tasks</p>
+                        <p class="text-2xl font-bold text-gray-900" id="total-tasks">0</p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6 border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Success Rate</p>
+                        <p class="text-2xl font-bold text-green-600" id="success-rate">100%</p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6 border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Active Agents</p>
+                        <p class="text-2xl font-bold text-purple-600" id="active-agents">0</p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-lg">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6 border">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Throughput</p>
+                        <p class="text-2xl font-bold text-orange-600" id="throughput">0/min</p>
+                    </div>
+                    <div class="p-3 bg-orange-100 rounded-lg">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Build Progress -->
+        <div id="build-progress" class="bg-white rounded-xl shadow-sm p-6 border mb-8" style="display: none;">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Build Progress</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-700" id="current-phase">Initializing...</span>
+                    <span class="text-sm text-gray-500" id="build-eta">ETA: --:--</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="overall-progress" style="width: 0%;"></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="build-phases">
+                    <!-- Build phases will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Tasks Column -->
+            <div class="lg:col-span-2">
+                <!-- Active Tasks -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border mb-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Active Tasks</h3>
+                        <div class="flex space-x-2">
+                            <button id="clear-completed" class="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">
+                                Clear Completed
+                            </button>
+                            <select id="task-filter" class="px-3 py-1 text-sm border rounded">
+                                <option value="all">All Tasks</option>
+                                <option value="pending">Pending</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tasks-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <!-- Tasks will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Performance Charts -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="chart-container">
+                            <canvas id="throughput-chart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="success-rate-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Agents Status -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Agents</h3>
+                    <div id="agents-list" class="space-y-3">
+                        <!-- Agents will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Alerts -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Alerts</h3>
+                        <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full" id="alert-count">0</span>
+                    </div>
+                    <div id="alerts-list" class="space-y-2 max-h-64 overflow-y-auto">
+                        <!-- Alerts will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Timeline</h3>
+                    <div id="timeline-list" class="space-y-3 max-h-64 overflow-y-auto">
+                        <!-- Timeline events will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebSocket Connection Script -->
+    <script>
+        class DashboardUI {
+            constructor() {
+                this.ws = null;
+                this.data = null;
+                this.charts = {};
+                this.currentFilter = 'all';
+                
+                this.initializeWebSocket();
+                this.setupEventListeners();
+                this.startTimeUpdater();
+            }
+
+            initializeWebSocket() {
+                try {
+                    // Use appropriate WebSocket URL based on environment
+                    const wsUrl = window.location.protocol === 'https:' 
+                        ? `wss://${window.location.host}/ws/dashboard`
+                        : `ws://${window.location.host || 'localhost:3000'}/ws/dashboard`;
+                    
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        console.log('Connected to dashboard');
+                        this.showConnectionStatus(true);
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        this.handleMessage(message);
+                    };
+                    
+                    this.ws.onclose = () => {
+                        console.log('Disconnected from dashboard');
+                        this.showConnectionStatus(false);
+                        // Reconnect after 3 seconds
+                        setTimeout(() => this.initializeWebSocket(), 3000);
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.showConnectionStatus(false);
+                    };
+                } catch (error) {
+                    console.error('Failed to initialize WebSocket:', error);
+                    // Use polling as fallback
+                    this.initializePolling();
+                }
+            }
+
+            initializePolling() {
+                // Fallback to HTTP polling if WebSocket fails
+                setInterval(() => {
+                    fetch('/api/dashboard/data')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.updateDashboard(data);
+                        })
+                        .catch(error => {
+                            console.error('Polling error:', error);
+                        });
+                }, 5000);
+            }
+
+            handleMessage(message) {
+                switch (message.event) {
+                    case 'dashboard:init':
+                    case 'dashboard:update':
+                        this.updateDashboard(message.data);
+                        break;
+                    case 'task:started':
+                        this.updateTask(message.data);
+                        break;
+                    case 'task:completed':
+                        this.updateTask(message.data.task);
+                        break;
+                    case 'agent:status':
+                        this.updateAgent(message.data);
+                        break;
+                    case 'alert:new':
+                        this.addAlert(message.data);
+                        break;
+                    case 'build:progress':
+                        this.updateBuildProgress(message.data);
+                        break;
+                }
+            }
+
+            updateDashboard(data) {
+                this.data = data;
+                this.updateMetrics(data.metrics);
+                this.updateTasks(data.tasks);
+                this.updateAgents(data.agents);
+                this.updateAlerts(data.alerts);
+                this.updateTimeline(data.timeline);
+                
+                if (data.buildProgress) {
+                    this.updateBuildProgress(data.buildProgress);
+                }
+                
+                this.updateCharts();
+            }
+
+            updateMetrics(metrics) {
+                document.getElementById('total-tasks').textContent = metrics.totalTasks;
+                
+                const successRate = metrics.totalTasks > 0 
+                    ? Math.round(((metrics.totalTasks - metrics.failedTasks) / metrics.totalTasks) * 100)
+                    : 100;
+                document.getElementById('success-rate').textContent = `${successRate}%`;
+                
+                document.getElementById('active-agents').textContent = metrics.activeAgents;
+                document.getElementById('throughput').textContent = `${metrics.throughput.toFixed(1)}/min`;
+            }
+
+            updateTasks(tasks) {
+                const container = document.getElementById('tasks-list');
+                const filteredTasks = this.currentFilter === 'all' 
+                    ? tasks 
+                    : tasks.filter(task => task.status === this.currentFilter);
+                
+                container.innerHTML = '';
+                
+                if (filteredTasks.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No tasks found</p>';
+                    return;
+                }
+                
+                filteredTasks.forEach(task => {
+                    const taskElement = this.createTaskElement(task);
+                    container.appendChild(taskElement);
+                });
+            }
+
+            createTaskElement(task) {
+                const div = document.createElement('div');
+                div.className = `p-4 border rounded-lg fade-in task-${task.status}`;
+                
+                const statusColor = {
+                    'pending': 'bg-gray-100 text-gray-800',
+                    'in_progress': 'bg-blue-100 text-blue-800',
+                    'completed': 'bg-green-100 text-green-800',
+                    'failed': 'bg-red-100 text-red-800'
+                }[task.status];
+                
+                div.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <span class="text-sm font-medium text-gray-900">${task.taskId}</span>
+                            <span class="ml-2 px-2 py-1 text-xs rounded-full ${statusColor}">${task.status}</span>
+                        </div>
+                        <span class="text-xs text-gray-500">${task.agentId}</span>
+                    </div>
+                    <div class="progress-bar mb-2">
+                        <div class="progress-fill" style="width: ${task.progress}%;"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>${task.progress}% complete</span>
+                        <span>${task.startTime ? new Date(task.startTime).toLocaleTimeString() : 'Not started'}</span>
+                    </div>
+                `;
+                
+                return div;
+            }
+
+            updateAgents(agents) {
+                const container = document.getElementById('agents-list');
+                container.innerHTML = '';
+                
+                agents.forEach(agent => {
+                    const agentElement = this.createAgentElement(agent);
+                    container.appendChild(agentElement);
+                });
+            }
+
+            createAgentElement(agent) {
+                const div = document.createElement('div');
+                div.className = 'p-3 border rounded-lg';
+                
+                const statusDot = `status-${agent.status}`;
+                
+                div.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <span class="status-dot ${statusDot}"></span>
+                            <span class="text-sm font-medium text-gray-900">${agent.agentId}</span>
+                        </div>
+                        <span class="text-xs text-gray-500">${agent.status}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 space-y-1">
+                        <div>Tasks completed: ${agent.tasksCompleted}</div>
+                        <div>Success rate: ${agent.performance.successRate.toFixed(1)}%</div>
+                        <div>Avg response: ${agent.performance.averageResponseTime.toFixed(0)}ms</div>
+                    </div>
+                `;
+                
+                return div;
+            }
+
+            updateAlerts(alerts) {
+                const container = document.getElementById('alerts-list');
+                const activeAlerts = alerts.filter(alert => !alert.acknowledged);
+                
+                document.getElementById('alert-count').textContent = activeAlerts.length;
+                
+                container.innerHTML = '';
+                
+                if (activeAlerts.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-2">No active alerts</p>';
+                    return;
+                }
+                
+                activeAlerts.forEach(alert => {
+                    const alertElement = this.createAlertElement(alert);
+                    container.appendChild(alertElement);
+                });
+            }
+
+            createAlertElement(alert) {
+                const div = document.createElement('div');
+                div.className = `p-3 border-l-4 bg-gray-50 alert-${alert.level}`;
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">${alert.message}</p>
+                            <p class="text-xs text-gray-500">${new Date(alert.timestamp).toLocaleTimeString()}</p>
+                        </div>
+                        <button class="text-xs text-gray-400 hover:text-gray-600" onclick="dashboard.acknowledgeAlert('${alert.id}')">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                
+                return div;
+            }
+
+            updateTimeline(timeline) {
+                const container = document.getElementById('timeline-list');
+                container.innerHTML = '';
+                
+                timeline.slice(0, 10).forEach(event => {
+                    const eventElement = this.createTimelineElement(event);
+                    container.appendChild(eventElement);
+                });
+            }
+
+            createTimelineElement(event) {
+                const div = document.createElement('div');
+                div.className = 'flex items-start space-x-3';
+                
+                const iconColor = {
+                    'task_started': 'text-blue-500',
+                    'task_completed': 'text-green-500',
+                    'task_failed': 'text-red-500',
+                    'agent_status_change': 'text-purple-500',
+                    'system_event': 'text-gray-500'
+                }[event.type] || 'text-gray-500';
+                
+                div.innerHTML = `
+                    <div class="flex-shrink-0">
+                        <div class="w-2 h-2 rounded-full ${iconColor.replace('text-', 'bg-')} mt-2"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm text-gray-900">${event.title}</p>
+                        <p class="text-xs text-gray-500">${new Date(event.timestamp).toLocaleTimeString()}</p>
+                    </div>
+                `;
+                
+                return div;
+            }
+
+            updateBuildProgress(buildProgress) {
+                const container = document.getElementById('build-progress');
+                
+                if (!buildProgress) {
+                    container.style.display = 'none';
+                    return;
+                }
+                
+                container.style.display = 'block';
+                
+                document.getElementById('current-phase').textContent = buildProgress.phase;
+                document.getElementById('overall-progress').style.width = `${buildProgress.overallProgress}%`;
+                
+                const eta = buildProgress.estimatedTimeRemaining;
+                const minutes = Math.floor(eta / (1000 * 60));
+                const seconds = Math.floor((eta % (1000 * 60)) / 1000);
+                document.getElementById('build-eta').textContent = `ETA: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                const phasesContainer = document.getElementById('build-phases');
+                phasesContainer.innerHTML = '';
+                
+                buildProgress.phases.forEach(phase => {
+                    const phaseElement = document.createElement('div');
+                    phaseElement.className = 'p-3 bg-gray-50 rounded-lg';
+                    
+                    const statusColor = {
+                        'pending': 'text-gray-500',
+                        'in_progress': 'text-blue-600',
+                        'completed': 'text-green-600',
+                        'failed': 'text-red-600'
+                    }[phase.status];
+                    
+                    phaseElement.innerHTML = `
+                        <div class="text-sm font-medium ${statusColor}">${phase.name}</div>
+                        <div class="progress-bar mt-2">
+                            <div class="progress-fill" style="width: ${phase.progress}%;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">${phase.progress}% complete</div>
+                    `;
+                    
+                    phasesContainer.appendChild(phaseElement);
+                });
+            }
+
+            updateCharts() {
+                if (!this.data) return;
+                
+                this.updateThroughputChart();
+                this.updateSuccessRateChart();
+            }
+
+            updateThroughputChart() {
+                const ctx = document.getElementById('throughput-chart').getContext('2d');
+                
+                if (!this.charts.throughput) {
+                    this.charts.throughput = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Tasks/min',
+                                data: [],
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Add current throughput data point
+                const now = new Date().toLocaleTimeString();
+                this.charts.throughput.data.labels.push(now);
+                this.charts.throughput.data.datasets[0].data.push(this.data.metrics.throughput);
+                
+                // Keep only last 20 data points
+                if (this.charts.throughput.data.labels.length > 20) {
+                    this.charts.throughput.data.labels.shift();
+                    this.charts.throughput.data.datasets[0].data.shift();
+                }
+                
+                this.charts.throughput.update('none');
+            }
+
+            updateSuccessRateChart() {
+                const ctx = document.getElementById('success-rate-chart').getContext('2d');
+                
+                if (!this.charts.successRate) {
+                    this.charts.successRate = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Successful', 'Failed'],
+                            datasets: [{
+                                data: [0, 0],
+                                backgroundColor: ['rgb(16, 185, 129)', 'rgb(239, 68, 68)']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+                
+                const successful = this.data.metrics.completedTasks;
+                const failed = this.data.metrics.failedTasks;
+                
+                this.charts.successRate.data.datasets[0].data = [successful, failed];
+                this.charts.successRate.update('none');
+            }
+
+            setupEventListeners() {
+                document.getElementById('task-filter').addEventListener('change', (e) => {
+                    this.currentFilter = e.target.value;
+                    if (this.data) {
+                        this.updateTasks(this.data.tasks);
+                    }
+                });
+                
+                document.getElementById('clear-completed').addEventListener('click', () => {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({ action: 'clear_completed' }));
+                    }
+                });
+                
+                document.getElementById('export-btn').addEventListener('click', () => {
+                    this.exportData();
+                });
+            }
+
+            acknowledgeAlert(alertId) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ action: 'acknowledge_alert', alertId }));
+                }
+            }
+
+            exportData() {
+                if (!this.data) return;
+                
+                const dataStr = JSON.stringify(this.data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `dashboard-data-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+            }
+
+            showConnectionStatus(connected) {
+                const statusElement = document.querySelector('.pulse-green');
+                if (connected) {
+                    statusElement.textContent = 'LIVE';
+                    statusElement.className = statusElement.className.replace('bg-red-100 text-red-800', 'bg-green-100 text-green-800 pulse-green');
+                } else {
+                    statusElement.textContent = 'OFFLINE';
+                    statusElement.className = statusElement.className.replace('bg-green-100 text-green-800 pulse-green', 'bg-red-100 text-red-800');
+                }
+            }
+
+            startTimeUpdater() {
+                const updateTime = () => {
+                    document.getElementById('current-time').textContent = new Date().toLocaleTimeString();
+                };
+                
+                updateTime();
+                setInterval(updateTime, 1000);
+            }
+        }
+
+        // Initialize dashboard
+        const dashboard = new DashboardUI();
+    </script>
+</body>
+</html>
