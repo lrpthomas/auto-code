@@ -1,3 +1,4 @@
+import Handlebars from 'handlebars';
 import { AppRequirements, GeneratedApp } from '../types';
 
 interface TestSuite {
@@ -26,6 +27,10 @@ interface TestConfig {
       statements: number;
     };
   };
+}
+
+interface TemplateContext {
+  [key: string]: unknown;
 }
 
 export class TestGenerator {
@@ -490,27 +495,14 @@ test.describe('{{flowName}}', () => {
     return totalWeight > 0 ? Math.round(totalCoverage / totalWeight) : 75;
   }
 
-  private renderTemplate(templateName: string, context: any): string {
+  private renderTemplate(templateName: string, context: TemplateContext): string {
     const template = this.testTemplates.get(templateName);
     if (!template) {
       throw new Error(`Template not found: ${templateName}`);
     }
 
-    // Simple template replacement (in real implementation, use Handlebars)
-    return template.replace(/\{\{([^}]+)\}\}/g, (match, path) => {
-      const keys = path.trim().split('.');
-      let value = context;
-      
-      for (const key of keys) {
-        if (value && typeof value === 'object') {
-          value = value[key];
-        } else {
-          return match; // Keep original if path not found
-        }
-      }
-      
-      return String(value || '');
-    });
+    const compiled = Handlebars.compile<TemplateContext>(template);
+    return compiled(context);
   }
 
   // Helper methods for extracting information from app structure
