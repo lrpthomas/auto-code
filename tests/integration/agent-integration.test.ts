@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OrchestratorAlpha } from '../../src/orchestrator';
 import { AgentCommunicationBus, AgentCoordinator } from '../../src/integration/agent-communication';
 import FrontendReactAgent from '../../agents/frontend-react-agent';
