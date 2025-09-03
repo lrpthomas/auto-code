@@ -7,10 +7,12 @@ interface ParsedFeature {
   category: string;
 }
 
+type TechValue = AppRequirements['techStack'][keyof AppRequirements['techStack']];
+
 export class RequirementParser {
   private tokenizer: natural.WordTokenizer;
   private stemmer: natural.PorterStemmer;
-  private techStackKeywords: Map<string, { type: keyof AppRequirements['techStack'], value: string }>;
+  private techStackKeywords: Map<string, { type: keyof AppRequirements['techStack']; value: TechValue }>;
   private featurePatterns: Map<RegExp, ParsedFeature>;
 
   constructor() {
@@ -155,7 +157,7 @@ export class RequirementParser {
     
     for (const [keyword, config] of this.techStackKeywords) {
       if (description.includes(keyword)) {
-        techStack[config.type] = config.value as any;
+        techStack[config.type] = config.value as TechValue;
       }
     }
 
