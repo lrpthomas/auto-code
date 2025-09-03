@@ -280,9 +280,8 @@ export class RequirementParser {
     confidence: number;
   }> {
     // Basic sentiment analysis
-    const sentiment = natural.SentimentAnalyzer.getSentiment(
-      this.tokenizer.tokenize(text) || []
-    );
+    const analyzer = new natural.SentimentAnalyzer('English', natural.PorterStemmer, 'afinn');
+    const sentiment = analyzer.getSentiment(this.tokenizer.tokenize(text));
 
     // Extract entities (simplified)
     const entities = this.extractEntities(text);
