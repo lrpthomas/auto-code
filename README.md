@@ -44,14 +44,14 @@ git clone <repo-url> autonomous-dev-system
 cd autonomous-dev-system
 
 # Install dependencies
-npm install
+pnpm install
 
 # Set up environment
 cp .env.example .env
 # Edit .env with your API keys
 
 # Start the system
-npm start
+pnpm start
 ```
 
 ### **First Generation**
@@ -333,14 +333,14 @@ SESSION_TIMEOUT=1800000
 ### **Automated Testing**
 ```bash
 # Run complete test suite
-npm run test:all
+pnpm run test:all
 
 # Individual test categories
-npm run test:unit           # Unit tests
-npm run test:integration    # Integration tests  
-npm run test:security      # Security tests
-npm run test:performance   # Performance tests
-npm run test:e2e          # End-to-end tests
+pnpm run test:unit           # Unit tests
+pnpm run test:integration    # Integration tests
+pnpm run test:security      # Security tests
+pnpm run test:performance   # Performance tests
+pnpm run test:e2e          # End-to-end tests
 
 # Run integration compatibility suite
 node integration-test-suite.js
@@ -369,12 +369,12 @@ node integration-test-suite.js
 
 #### **Installation Problems**
 ```bash
-# Clear npm cache
-npm cache clean --force
+# Clear pnpm store
+pnpm store prune
 
 # Delete node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
 
 # Check Node.js version (requires 16+)
 node --version
@@ -426,19 +426,19 @@ ls -la data/
 ### **Local Development**
 ```bash
 # Start in development mode
-npm run dev
+pnpm run dev
 
 # With hot reload
-npm run dev:watch
+pnpm run dev:watch
 
 # Debug mode
-npm run debug
+pnpm run debug
 ```
 
 ### **Production Server**
 ```bash
 # Using PM2
-npm install -g pm2
+pnpm add -g pm2
 pm2 start ecosystem.config.js
 
 # Using Docker
@@ -528,11 +528,11 @@ scrape_configs:
 ### **Security Checklist**
 ```bash
 # Run security audit
-npm audit
-npm audit --audit-level high
+pnpm audit
+pnpm audit --audit-level high
 
 # Scan for vulnerabilities
-npm install -g snyk
+pnpm add -g snyk
 snyk test
 
 # Check security headers
@@ -658,7 +658,7 @@ Ready to transform your development workflow?
 ```bash
 # Quick start in 3 commands
 git clone <repo-url> autonomous-dev-system
-cd autonomous-dev-system && npm install
+cd autonomous-dev-system && pnpm install
 node secure-orchestrator.js "Build my dream application"
 ```
 

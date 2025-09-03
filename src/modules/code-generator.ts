@@ -505,15 +505,15 @@ FROM node:${nodeVersion}
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
 
-${requirements.techStack.frontend ? 'RUN npm run build\n' : ''}
+${requirements.techStack.frontend ? 'RUN pnpm run build\n' : ''}
 
 EXPOSE ${requirements.techStack.backend ? '3000' : '80'}
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
 `;
   }
 
@@ -627,20 +627,20 @@ ${requirements.features.map(f => `- ${f}`).join('\n')}
 
 ### Installation
 \`\`\`bash
-npm install
+pnpm install
 cp .env.example .env
 # Configure your environment variables
 \`\`\`
 
 ### Development
 \`\`\`bash
-npm run dev
+pnpm run dev
 \`\`\`
 
 ### Production
 \`\`\`bash
-npm run build
-npm start
+pnpm run build
+pnpm start
 \`\`\`
 
 ### Docker

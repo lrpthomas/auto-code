@@ -1581,7 +1581,7 @@ generates:
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
 
@@ -1590,7 +1590,7 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
   CMD node -e "require('http').get('http://localhost:4000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-CMD ["npm", "start"]`;
+CMD ["pnpm", "start"]`;
   }
 
   private generateDockerCompose(requirements: AppRequirements): string {
@@ -1787,9 +1787,9 @@ Production-ready GraphQL API with subscriptions, DataLoader optimization, authen
 ## Quick Start
 
 \`\`\`bash
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
+pnpm run dev
 \`\`\`
 
 GraphQL Playground: http://localhost:4000/graphql
@@ -1826,8 +1826,8 @@ Authorization: Bearer YOUR_TOKEN
 ## Testing
 
 \`\`\`bash
-npm test
-npm run test:watch
+pnpm test
+pnpm run test:watch
 \`\`\`
 
 ## Docker

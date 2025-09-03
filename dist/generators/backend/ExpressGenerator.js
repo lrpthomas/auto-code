@@ -1459,7 +1459,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN pnpm install --frozen-lockfile --prod && pnpm store prune
 
 # Copy source code
 COPY . .
@@ -1480,7 +1480,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start application
-CMD ["npm", "start"]`;
+CMD ["pnpm", "start"]`;
     }
     generateDockerCompose(requirements) {
         const dbService = requirements.techStack.database === 'mongodb' ? `
@@ -1989,10 +1989,10 @@ Production-ready Express.js API with JWT authentication, input validation, rate 
 
 ### Installation
 \`\`\`bash
-npm install
+pnpm install
 cp .env.example .env
 # Edit .env with your configuration
-npm run dev
+pnpm run dev
 \`\`\`
 
 ### Docker
@@ -2108,13 +2108,13 @@ See \`.env.example\` for all required environment variables.
 
 \`\`\`bash
 # Run all tests
-npm test
+pnpm test
 
 # Run tests with coverage
-npm run test:coverage
+pnpm run test:coverage
 
 # Run tests in watch mode
-npm run test:watch
+pnpm run test:watch
 \`\`\`
 
 ## Deployment

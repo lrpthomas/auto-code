@@ -425,15 +425,15 @@ bash
 
 # 1. Install dependencies
 
-npm install
+pnpm install
 
-# 2. Setup the system  
+# 2. Setup the system
 
-npm run setup
+pnpm run setup
 
 # 3. Validate everything works
 
-npm run validate
+pnpm run validate
 
 # 4. Test with a simple app
 
@@ -528,14 +528,14 @@ bash
 
 # Install all dependencies
 
-npm install
-npm install express ws
+pnpm install
+pnpm add express ws
 
 # Set up frontend
 
 cd gui-frontend
-npm install
-npm run build
+pnpm install
+pnpm run build
 cd ..
 
 # Start the complete GUI system

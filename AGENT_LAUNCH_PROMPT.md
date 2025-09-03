@@ -443,7 +443,7 @@ echo "⏰ Timeline: Production deployment in T-minus 6 weeks"
 echo "🚀 LAUNCHING AUTONOMOUS DEVELOPMENT SEQUENCE..."
 
 # Begin coordinated agent execution
-npm run launch-agents
+pnpm run launch-agents
 ```
 
 ---

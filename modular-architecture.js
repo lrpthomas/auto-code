@@ -309,7 +309,7 @@ class ModularOrchestrator extends EventEmitter {
             'local-server': async () => ({
                 type: 'development',
                 port: 3000,
-                command: 'npm run dev'
+                command: 'pnpm run dev'
             })
         };
 

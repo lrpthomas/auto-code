@@ -16,10 +16,10 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -81,11 +81,11 @@ RUN addgroup -g 1001 -S nodejs && \\
 
 # Copy package files
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN pnpm install --frozen-lockfile --prod && pnpm store prune
 
 # Copy application code
 COPY . .
-RUN npm run build
+RUN pnpm run build
 
 # Change ownership to non-root user
 RUN chown -R nodeuser:nodejs /app
@@ -96,7 +96,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \\
     CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["npm", "start"]`
+CMD ["pnpm", "start"]`
         });
         // Kubernetes templates
         this.deploymentTemplates.set('kubernetes-deployment', {
@@ -228,7 +228,7 @@ spec:
 ## Deployment Commands
 \`\`\`bash
 # Install Vercel CLI
-npm i -g vercel
+pnpm add -g vercel
 
 # Login to Vercel
 vercel login
@@ -507,9 +507,9 @@ spec:
             platform: 'vercel',
             configuration: {
                 framework: requirements.techStack.frontend,
-                buildCommand: 'npm run build',
+                buildCommand: 'pnpm run build',
                 outputDirectory: 'dist',
-                installCommand: 'npm ci'
+                installCommand: 'pnpm install'
             },
             scripts,
             files
@@ -644,7 +644,7 @@ services:
     }
     generateDockerIgnore(type) {
         const common = `node_modules
-npm-debug.log
+pnpm-debug.log
 .git
 .gitignore
 README.md
@@ -910,7 +910,7 @@ kubectl delete namespace ${appName}
 
 ## Prerequisites
 - Vercel account
-- Vercel CLI installed: \`npm i -g vercel\`
+- Vercel CLI installed: \`pnpm add -g vercel\`
 
 ## Deployment Steps
 
