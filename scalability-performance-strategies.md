@@ -47,7 +47,7 @@ services:
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN pnpm install --frozen-lockfile --prod && pnpm store prune
 
 FROM node:18-alpine AS runtime
 RUN addgroup -g 1001 -S nodejs

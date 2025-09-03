@@ -4,7 +4,7 @@
 
 ### ✅ **Environment Setup**
 - [ ] **Node.js 16+** installed
-- [ ] **npm 8+** or **yarn 3+** installed  
+- [ ] **pnpm 8+** installed
 - [ ] **Git** configured with credentials
 - [ ] **Docker** installed (optional but recommended)
 - [ ] **Redis** server running and accessible
@@ -219,24 +219,24 @@ WantedBy=multi-user.target
 ### ✅ **Test Commands**
 ```bash
 # Run all tests
-npm run test:all
+pnpm run test:all
 
 # Run specific test suites
-npm run test:unit
-npm run test:integration  
-npm run test:security
-npm run test:performance
-npm run test:e2e
+pnpm run test:unit
+pnpm run test:integration
+pnpm run test:security
+pnpm run test:performance
+pnpm run test:e2e
 
 # Run integration test suite
 node integration-test-suite.js
 
 # Security audit
-npm audit
-npm audit --audit-level high
+pnpm audit
+pnpm audit --audit-level high
 
 # Performance benchmarks
-npm run benchmark
+pnpm run benchmark
 ```
 
 ### ✅ **Load Testing**
@@ -269,7 +269,7 @@ sudo apt install nginx -y
 sudo systemctl enable nginx
 
 # Install PM2
-sudo npm install -g pm2
+sudo pnpm add -g pm2
 ```
 
 ### ✅ **Step 2: Application Deployment**
@@ -285,7 +285,7 @@ git clone <your-repo> .
 sudo chown -R nodejs:nodejs /opt/autonomous-dev-system
 
 # Install dependencies
-npm ci --production
+pnpm install --prod --frozen-lockfile
 
 # Create required directories
 mkdir -p logs data test-reports
@@ -434,7 +434,7 @@ tail -f /opt/autonomous-dev-system/logs/error.log
 node -c secure-orchestrator.js
 
 # Check dependencies
-npm ls --depth=0
+pnpm list --depth=0
 ```
 
 ### **High Memory Usage**

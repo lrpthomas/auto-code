@@ -25,12 +25,12 @@ This system provides five specialized code review agents that work together to p
 1. Clone the repository
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 3. Build the TypeScript agents:
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Basic Usage
@@ -226,7 +226,7 @@ const agent = new CodeQualityAgent({
 # GitHub Actions example
 - name: Code Review
   run: |
-    npm run build
+    pnpm run build
     node code-review-demo.js
   continue-on-error: true
 ```
