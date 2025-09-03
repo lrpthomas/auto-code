@@ -65,6 +65,16 @@ node secure-orchestrator.js "Build a real-time chat application with authenticat
 # Quality: Production-ready with 90%+ test coverage
 ```
 
+### Build
+
+```bash
+pnpm install
+pnpm build
+```
+
+This compiles TypeScript sources into the `dist/` directory. The build
+artifacts are generated during CI and are not committed to the repository.
+
 ---
 
 ## 🏗️ **SYSTEM ARCHITECTURE**
